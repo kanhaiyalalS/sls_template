@@ -1,0 +1,26 @@
+Resources:
+
+  SharedCartItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+      TableName: ${self:custom.names.dynamoDb.Table_Name}
+
+      AttributeDefinitions:
+        - AttributeName: "sharedCartId"
+          AttributeType: "S"
+        - AttributeName: "sharedCartItemId"
+          AttributeType: "S"
+
+      KeySchema:
+        - AttributeName: "sharedCartId"
+          KeyType: "HASH"
+        - AttributeName: "sharedCartItemId"
+          KeyType: "RANGE"
+
+
+      TimeToLiveSpecification:
+        AttributeName: "ttl"
+        Enabled: true

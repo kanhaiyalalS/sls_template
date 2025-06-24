@@ -1,0 +1,74 @@
+{
+  "name": "Boilerplate",
+  "version": "1.0.0",
+  "description": "service",
+  "scripts": {
+    "build": "tsc --build && eslint ./src/**/*.ts --cache",
+    "test": "jest --bail --coverage --silent",
+    "lint": "eslint ./src/**/*.ts --cache",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "deployDev": "sls deploy --stage dev --region us-west-2 --conceal",
+    "packageDev": "sls package --stage dev --region us-west-2",
+    "refresh-token": "gimme-aws-creds --profile default",
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://test.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws/dynamodb-data-mapper": "^0.7.3",
+    "@aws/dynamodb-data-mapper-annotations": "^0.7.3",
+    "@aws/dynamodb-expressions": "^0.7.3",
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1601.0",
+    "aws-xray-sdk": "^3.6.0",
+    "dynamoose": "^4.0.0",
+    "lodash": "4.17.21",
+    "moment": "2.30.1",
+    "object-hash": "^3.0.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.24.4",
+    "@babel/preset-typescript": "^7.24.1",
+    "@faker-js/faker": "8.4.1",
+    "@types/aws-lambda": "^8.10.137",
+    "@types/jest": "^29.5.12",
+    "@types/lodash": "4.17.0",
+    "@types/object-hash": "^3.0.6",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^7.7.0",
+    "@typescript-eslint/parser": "^7.7.0",
+    "babel-jest": "^29.7.0",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "jest": "^29.7.0",
+    "serverless-dependson-plugin": "^1.1.2",
+    "serverless-plugin-common-excludes": "^4.0.0",
+    "serverless-plugin-include-dependencies": "^6.0.0",
+    "serverless-plugin-tracing": "^2.0.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "serverless-provisioned-concurrency-autoscaling": "^2.0.1",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "serverless": "^3.38.0"
+  },
+  "resolutions": {
+    "ansi-regex": "5.0.1",
+    "async": "3.2.2",
+    "decode-uri-component": "0.2.2",
+    "superagent": "7.1.6",
+    "got": "11.8.5",
+    "protobufjs": "6.11.3",
+    "simple-git": "3.16.0",
+    "ramda": "0.27.2",
+    "file-type": "16.5.4",
+    "node-fetch": "2.6.7"
+  }
+}

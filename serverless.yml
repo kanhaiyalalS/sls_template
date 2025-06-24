@@ -1,0 +1,129 @@
+service: boilerplate
+configValidationMode: error
+frameworkVersion: '^3.38.0'
+
+package:
+  individually: false
+  excludeDevDependencies: true
+  patterns:
+    - '!node_modules/.cache/**'
+    - '!coverage/**'
+    - '!.vscode/**'
+    - '!.idea/**'
+    - '!.git/**'
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
+  tags:
+    Application: boilerplate
+    Owner: ${ssm:/test-config/${self:custom.stage}/test-support-email, 'na'}
+    Environment: ${self:custom.stage}
+    Version: ${file(metadata.json):build.version, 'na'}
+    GitHash: ${file(metadata.json):build.gitHash, 'na'}
+    BuildDate: ${file(metadata.json):build.date, 'na'}
+    JenkinsJob: ${file(metadata.json):build.jenkins.job, 'na'}
+    JenkinsBuild: ${file(metadata.json):build.jenkins.build, 'na'}
+    map-migrated: ${file(config/static/${self:custom.stage}.json):migration-tag}
+  names:
+    dynamoDb:
+      Table_Name: boilerplate-items-${self:custom.stage}
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+  tags: ${self:custom.tags}
+  stackTags: ${self:custom.tags}
+  lambdaHashingVersion: 20201221
+  versionFunctions: false
+  memorySize: 768
+  timeout: 20
+  tracing:
+    apiGateway: true
+    lambda: true
+  logs:
+    restApi:
+      accessLogging: true
+      format: '{
+                  "_time": "$context.requestTime",
+                  "stage" : "$context.stage",
+                  "requestId":"$context.requestId",
+                  "api_id" : "$context.apiId",
+                  "resource_id" : "$context.resourceId"
+                }'
+      executionLogging: false
+  deploymentBucket:
+    name: sls-deploy-${self:custom.account}-${self:custom.region}
+    serverSideEncryption: AES256
+  environment:
+    LOG_LEVEL: ${file(config/static/${self:custom.stage}.json):log-level}
+    REGION: ${self:custom.region}
+    STAGE: ${self:custom.stage}
+    SERVICE_NAME: ${self:service}
+    SHARED_CART_ITEMS_TABLE: ${self:custom.names.dynamoDb.Table_Name}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    SHARED_CART_ITEMS_TTL: 2592000 # 30 days
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - DynamoDB:GetItem
+            - DynamoDB:PutItem
+            - DynamoDB:UpdateItem
+            - DynamoDB:DeleteItem
+            - DynamoDB:DescribeTable
+            - DynamoDB:Query
+            - Dynamodb:DescribeStream
+            - Dynamodb:GetRecords
+            - Dynamodb:GetShardIterator
+            - Dynamodb:ListStreams
+            - Dynamodb:BatchWriteItem
+          Resource:
+            - { "Fn::GetAtt": [ SharedCartItemsTable, Arn ] }
+        - Effect: Allow
+          Action:
+            - SSM:GetParameter
+          Resource:
+            - arn:aws:ssm:${self:custom.region}:${aws:accountId}:parameter/${self:service}/${self:custom.stage}/*
+            - arn:aws:ssm:${self:custom.region}:${aws:accountId}:parameter/test-shared-config/${self:custom.stage}/*
+        - Effect: Allow
+          Action:
+            - KMS:Decrypt
+          Resource:
+            - arn:aws:kms:${self:custom.region}:${aws:accountId}:alias/aws/ssm
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+            - lambda:InvokeAsync
+          Resource:
+            - arn:aws:lambda:${self:custom.region}:${aws:accountId}:function:${self:service}-${self:custom.stage}-*
+            - arn:aws:lambda:${self:custom.region}:${aws:accountId}:function:${self:provider.environment.CART_SERVICE_GET_ALL_ITEMS}*
+        - Effect: Allow
+          Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - KMS:Decrypt
+          Resource:
+            - arn:aws:kms:${self:custom.region}:${aws:accountId}:alias/aws/ssm
+  
+functions:
+  boilerplateConfig:
+    handler: src/handlers/SharedCartHandler.createSharedCart
+    provisionedConcurrency: ${file(config/static/${self:custom.stage}.json):deploy.provisioned.boilerplateConfig.desiredCount, null}
+    concurrencyAutoscaling:
+      enabled: ${file(config/static/${self:custom.stage}.json):deploy.provisioned.boilerplateConfig.enabled}
+      minimum: ${file(config/static/${self:custom.stage}.json):deploy.provisioned.boilerplateConfig.min}
+      maximum: ${file(config/static/${self:custom.stage}.json):deploy.provisioned.boilerplateConfig.max}
+  
+resources: ${file(template.yml)}
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-plugin-common-excludes
+  - serverless-plugin-tracing
